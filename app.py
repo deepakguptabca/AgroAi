@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
@@ -10,6 +11,8 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 app = Flask(__name__)
 
 HISTORY_FILE = "hist.txt"
+ESP_IP = os.getenv("ESP_IP")
+
 
 # ------------------------
 # Helper Functions
@@ -55,7 +58,11 @@ def chat():
         User's new message:
         {user_msg}
 
+        User's field data:
+        {feild_data}
+
         Reply in a short, friendly, and helpful way.
+        If user asks for about feild status, provide suggestions based on the field data.
         """
 
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -75,6 +82,15 @@ def clear():
     clear_history()
     return jsonify({"status": "Chat cleared"})
 
+@app.route("/getdata")
+def get_data():
+    try:
+        r = requests.get(ESP_IP, timeout=2)
+        field_data = r.json()
+        return jsonify(r.json())
+    except:
+        return jsonify({"error": "ESP not reachable"})
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",debug=True)

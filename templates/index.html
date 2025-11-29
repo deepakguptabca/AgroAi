@@ -47,7 +47,7 @@
         margin-left: 5px;
         cursor: pointer;
       }
-      .field{
+      .field {
         border: 2px solid gray;
         border-radius: 10px;
         margin-top: 10px;
@@ -93,39 +93,85 @@
       button:hover {
         opacity: 0.9;
       }
+      .circle-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .circle-box {
+        text-align: center;
+      }
+
+      .circle {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: conic-gradient(#4caf50 0deg, #eee 0deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+        position: relative;
+      }
+
+      .inner {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 35px;
+        font-weight: bold;
+      }
+
+      .pump-status {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 22px;
+      }
     </style>
   </head>
   <body>
     <h1>AI Powered Farmer Field Mangament System</h1>
     <!-- main section -->
     <div class="container">
-      <!-- first section -->
+      <!-- FIRST SECTION (Updated Dashboard) -->
       <div class="field">
         <h1>🌿 Smart Irrigation Dashboard</h1>
-        <div class="box">
-          <h2>Moisture: <span id="moisture">0</span>%</h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
-          <div class="status">PUMP: <span id="buzzer">OFF</span></div>
+
+        <div class="circle-container">
+          <!-- Moisture Circle -->
+          <div class="circle-box">
+            <div class="circle" id="moistureCircle">
+              <div class="inner" id="moistureEmoji">💧</div>
+            </div>
+            <h3>Moisture: <span id="moistureValue">0</span>%</h3>
+          </div>
+
+          <!-- Humidity Circle -->
+          <div class="circle-box">
+            <div class="circle" id="humidityCircle">
+              <div class="inner" id="humidityEmoji">🌫️</div>
+            </div>
+            <h3>Humidity: <span id="humidityValue">0</span>%</h3>
+          </div>
+
+          <!-- Temperature Circle -->
+          <div class="circle-box">
+            <div class="circle" id="temperatureCircle">
+              <div class="inner" id="tempEmoji">🌡️</div>
+            </div>
+            <h3>Temperature: <span id="temperatureValue">0</span>°C</h3>
+          </div>
         </div>
-        <div class="box">
-          <h2>Humidity: <span id="moisture">0</span>%</h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
-        </div>
-        <div class="box">
-          <h2>Temperature: <span id="moisture">0</span>%</h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
-        </div>
-        <div class="box">
-          <h2>Fencing Crossed : <span id="moisture">Not,Today</span></h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
-        </div>
-        <div class="box">
-          <h2>ScareCrow : <span id="moisture">Rotating</span></h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
-        </div>
-        <div class="box">
-          <h2>Power : <span id="moisture">Solar,Battery</span></h2>
-          <div class="bar"><div class="fill" id="fill"></div></div>
+
+        <!-- Pump Status -->
+        <div class="pump-status">
+          <h2> Pump: <span id="pumpStatus">OFF</span></h2>
         </div>
       </div>
 
@@ -150,35 +196,33 @@
       </div>
     </div>
 
-
     <script>
-  async function clearChat() {
-    const btn = document.getElementById("clearBtn");
-    if (!confirm("Clear chat history for everyone on this server?")) return;
+      async function clearChat() {
+        const btn = document.getElementById("clearBtn");
+        if (!confirm("Clear chat history for everyone on this server?")) return;
 
-    try {
-      btn.disabled = true;
-      // stop any speaking
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+        try {
+          btn.disabled = true;
+          // stop any speaking
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
 
-      const res = await fetch("/clear", { method: "POST" });
-      const data = await res.json();
+          const res = await fetch("/clear", { method: "POST" });
+          const data = await res.json();
 
-      // wipe UI
-      document.getElementById("chatBox").innerHTML = "";
-      // optionally show a small system note
-      const note = document.createElement("div");
-      note.className = "bot";
-      note.textContent = data.status || "Chat cleared";
-      document.getElementById("chatBox").appendChild(note);
-    } catch (e) {
-      alert("Failed to clear chat. Try again.");
-    } finally {
-      btn.disabled = false;
-    }
-  }
-</script>
-
+          // wipe UI
+          document.getElementById("chatBox").innerHTML = "";
+          // optionally show a small system note
+          const note = document.createElement("div");
+          note.className = "bot";
+          note.textContent = data.status || "Chat cleared";
+          document.getElementById("chatBox").appendChild(note);
+        } catch (e) {
+          alert("Failed to clear chat. Try again.");
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    </script>
 
     <script>
       const chatBox = document.getElementById("chatBox");
@@ -241,6 +285,59 @@
           alert("🎙️ Voice recognition error: " + event.error);
         };
       }
+    </script>
+    <script>
+      async function updateDashboard() {
+        try {
+          const res = await fetch("/getdata");
+          const data = await res.json();
+
+          const soil = data.soil;
+          const humidity = data.humidity;
+          const temp = data.temperature;
+          const pump = data.pump;
+
+          // ---- Update numbers ----
+          document.getElementById("moistureValue").innerText = soil;
+          document.getElementById("humidityValue").innerText = humidity;
+          document.getElementById("temperatureValue").innerText = temp;
+
+          document.getElementById("pumpStatus").innerText = pump.toUpperCase();
+
+          // ---- Circle Fill Degrees ----
+          let soilDeg = soil * 3.6;
+          let humDeg = humidity * 3.6;
+          let tempDeg = Math.min(temp * 3.6, 360);
+
+          // ---- Update Circles ----
+          document.getElementById(
+            "moistureCircle"
+          ).style.background = `conic-gradient(#4caf50 ${soilDeg}deg, #eee ${soilDeg}deg)`;
+
+          document.getElementById(
+            "humidityCircle"
+          ).style.background = `conic-gradient(#00bcd4 ${humDeg}deg, #eee ${humDeg}deg)`;
+
+          document.getElementById(
+            "temperatureCircle"
+          ).style.background = `conic-gradient(#ff5722 ${tempDeg}deg, #eee ${tempDeg}deg)`;
+
+          // ---- Emojis Based on Conditions ----
+          document.getElementById("moistureEmoji").innerText =
+            soil < 30 ? "🥀" : soil < 60 ? "🌿" : "💧";
+
+          document.getElementById("humidityEmoji").innerText =
+            humidity < 40 ? "🔥" : humidity < 70 ? "🌤️" : "🌫️";
+
+          document.getElementById("tempEmoji").innerText =
+            temp < 15 ? "❄️" : temp < 32 ? "🌡️" : "🥵";
+        } catch (err) {
+          console.log("Error fetching data");
+        }
+      }
+
+      setInterval(updateDashboard, 500);
+      updateDashboard();
     </script>
   </body>
 </html>
