@@ -3,6 +3,7 @@ import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
+import json
 
 # Load environment variables
 load_dotenv()
@@ -23,13 +24,16 @@ def load_history():
             return f.read()
     return ""
 
+
 def save_to_history(user_msg, ai_reply):
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(f"User: {user_msg}\n")
         f.write(f"AI: {ai_reply}\n\n")
 
+
 def clear_history():
     open(HISTORY_FILE, "w").close()
+
 
 # ------------------------
 # Routes
@@ -37,6 +41,7 @@ def clear_history():
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -49,6 +54,17 @@ def chat():
 
         history = load_history()
 
+        # --- fetch current field data from ESP (handle missing scheme/IP) ---
+        field_data = {}
+        try:
+            if ESP_IP:
+                esp_url = ESP_IP if ESP_IP.startswith("http") else f"http://{ESP_IP}"
+                resp = requests.get(esp_url, timeout=2)
+                field_data = resp.json()
+        except Exception:
+            field_data = {"error": "ESP not reachable"}
+
+        # include JSON-formatted field data in the prompt
         prompt = f"""
         You are an intelligent farming assistant for Indian farmers.
 
@@ -59,10 +75,10 @@ def chat():
         {user_msg}
 
         User's field data:
-        {feild_data}
+        {json.dumps(field_data)}
 
         Reply in a short, friendly, and helpful way.
-        If user asks for about feild status, provide suggestions based on the field data.
+        If user asks for about field status, provide suggestions based on the field data.
         """
 
         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -82,6 +98,7 @@ def clear():
     clear_history()
     return jsonify({"status": "Chat cleared"})
 
+
 @app.route("/getdata")
 def get_data():
     try:
@@ -93,4 +110,4 @@ def get_data():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",debug=True)
+    app.run(host="0.0.0.0", debug=True)
