@@ -78,7 +78,9 @@ def chat():
         {json.dumps(field_data)}
 
         Reply in a short, friendly, and helpful way.
-        If user asks for about field status, provide suggestions based on the field data.
+        only If user asks for about field status, provide suggestions based on the field data.
+
+        IMPORTANT: Return the reply as plain text without any Markdown, asterisks (*), backticks (`), underscores (_), or other formatting tokens.
         """
 
         model = genai.GenerativeModel("gemini-2.5-flash")
