@@ -4,6 +4,8 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 import json
+import csv
+from datetime import datetime, timezone, timedelta
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +15,9 @@ app = Flask(__name__)
 
 HISTORY_FILE = "hist.txt"
 ESP_IP = os.getenv("ESP_IP")
+DATA_CSV = "esp_data.csv"
+LAST_PUMP = None
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 # ------------------------
@@ -104,9 +109,50 @@ def clear():
 @app.route("/getdata")
 def get_data():
     try:
-        r = requests.get(ESP_IP, timeout=2)
+        if not ESP_IP:
+            return jsonify({"error": "ESP_IP not configured"}), 400
+
+        esp_url = ESP_IP if ESP_IP.startswith("http") else f"http://{ESP_IP}"
+        r = requests.get(esp_url, timeout=2)
         field_data = r.json()
-        return jsonify(r.json())
+
+        # Save received field data to CSV only when pump reports 'on' or 'off',
+        # and only when pump state changes from last logged state.
+        try:
+            pump_val = field_data.get("pump")
+            pump_str = str(pump_val).lower() if pump_val is not None else None
+            if pump_str in ("on", "off"):
+                global LAST_PUMP
+                if pump_str != LAST_PUMP:
+                    row = {
+                        "timestamp": datetime.now(IST).isoformat(),
+                        "soil": field_data.get("soil"),
+                        "humidity": field_data.get("humidity"),
+                        "temperature": field_data.get("temperature"),
+                        "pump": pump_str,
+                    }
+
+                    file_exists = os.path.exists(DATA_CSV)
+                    with open(DATA_CSV, "a", newline="", encoding="utf-8") as csvfile:
+                        writer = csv.DictWriter(
+                            csvfile,
+                            fieldnames=[
+                                "timestamp",
+                                "soil",
+                                "humidity",
+                                "temperature",
+                                "pump",
+                            ],
+                        )
+                        if not file_exists:
+                            writer.writeheader()
+                        writer.writerow(row)
+
+                    LAST_PUMP = pump_str
+        except Exception:
+            pass
+
+        return jsonify(field_data)
     except:
         return jsonify({"error": "ESP not reachable"})
 
