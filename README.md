@@ -14,7 +14,7 @@ The system collects real-time data from the field and displays it on a dashboard
 
 ## Features
 
-- 📊 Real-time monitoring of:
+- Real-time monitoring of:
   - Soil Moisture
   - Temperature
   - Humidity
