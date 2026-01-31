@@ -82,7 +82,7 @@ def chat():
         User's field data:
         {json.dumps(field_data)}
 
-        Reply in a short, friendly, and helpful way.
+        Reply in a short, friendly,same accent,language as per user query and helpful way.
         only If user asks for about field status, provide suggestions based on the field data.
 
         IMPORTANT: Return the reply as plain text without any Markdown, asterisks (*), backticks (`), underscores (_), or other formatting tokens.
